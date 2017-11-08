@@ -4,31 +4,39 @@
 
     public class CreateDotList : MonoBehaviour {
         public GameObject dott;
-        public float arDist;
-
         public Material newMaterial;
         public Material oldMaterial;
         public LineRenderer trajectory;
 
         //for calculating diffference
         public DrawTrajectory spacedot;
+		public GameObject position;
         private int count = 0;
         private int dotsOnTrajectory;
         private List<GameObject> dotList = new List<GameObject>();
+		private float relativeDist;
 
         public void Update() {
             dotsOnTrajectory = spacedot.dot.Count;  // in Update because dots would not draw if declared in Start()
 
             checkScreenTouched();
             resetScreen();
+
+			relativeDist = Camera.main.WorldToScreenPoint(position.transform.position).z;
         }
 
         void checkScreenTouched() {
+			#if UNITY_EDITOR
+			if (Input.GetMouseButtonDown(0) == true) { //&& count < dotsOnTrajectory
+				createTouchDot(Input.mousePosition);
+				}
+			#else
             foreach (Touch touch in Input.touches) {
                 if (touch.phase == TouchPhase.Began && count < dotsOnTrajectory) {
                     createTouchDot(touch.position);
                 }
             }
+			#endif
         }
 
         void resetScreen() {
@@ -49,9 +57,8 @@
 
         void createTouchDot(Vector3 position) // if Vive trigger is pressed
         {
-            Vector3 touchPos = position;                      
-            float relativeDist =  Camera.main.transform.position.z - arDist;
-            touchPos.z = Mathf.Abs(relativeDist);                                             // distance from camera of ImageTarget
+            Vector3 touchPos = position;
+			touchPos.z = relativeDist;                                             // distance from camera of ImageTarget
 
             Vector3 placeDot = Camera.main.ScreenToWorldPoint(touchPos);
 
@@ -64,11 +71,9 @@
         void displayDots(Vector3 position, int index) {
             float dist = 0;
 
-
             if (spacedot.dot.Count > 0 && index < spacedot.dot.Count) {
                 GameObject closestDot = spacedot.dot[index];
                 dist = Vector3.Distance(closestDot.transform.position, position); // calculate the distance from the trajectory to the input
-                Debug.Log(dist);
                 //mText.text = "Error: " + dist;
                 closestDot.GetComponent<Renderer>().material = newMaterial; //changes the material from transparent to green
                 
